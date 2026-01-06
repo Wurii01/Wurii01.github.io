@@ -65,7 +65,7 @@
             height: 100%;
         }
 
-        /* --- Content Overlay (New Feature) --- */
+        /* --- Content Overlay --- */
         .content-overlay {
             position: absolute;
             top: 50%;
@@ -73,10 +73,10 @@
             transform: translate(-50%, -50%);
             text-align: center;
             z-index: 2;
-            pointer-events: none; /* Let clicks pass through to canvas */
+            pointer-events: none;
             width: 80%;
             max-width: 800px;
-            mix-blend-mode: exclusion; /* Cool blending effect */
+            mix-blend-mode: exclusion;
         }
 
         .content-heading {
@@ -97,6 +97,7 @@
             opacity: 0;
             transform: translateY(20px);
             transition: opacity 0.8s ease 0.1s, transform 0.8s ease 0.1s;
+            white-space: pre-line; /* 줄바꿈 허용 */
         }
 
         .content-active .content-heading,
@@ -105,7 +106,7 @@
             transform: translateY(0);
         }
 
-        /* Current slide number */
+        /* UI Elements */
         .slide-number {
             position: absolute;
             top: 50%;
@@ -120,7 +121,6 @@
             text-transform: uppercase;
         }
 
-        /* Total slides */
         .slide-total {
             position: absolute;
             top: 50%;
@@ -213,11 +213,7 @@
         }
 
         @media (max-width: 600px) {
-            .slides-navigation {
-                bottom: var(--spacing-sm);
-                left: var(--spacing-sm);
-                right: var(--spacing-sm);
-            }
+            .slides-navigation { bottom: var(--spacing-sm); left: var(--spacing-sm); right: var(--spacing-sm); }
             .slide-nav-item { padding: 0.75rem; }
             .help-text { top: var(--spacing-sm); left: var(--spacing-sm); }
             .slide-number { left: var(--spacing-sm); }
@@ -251,20 +247,20 @@
         import gsap from "https://esm.sh/gsap"; 
 
         // ========================================
-        // DATA CONFIGURATION (수정 가능한 영역)
+        // DATA CONFIGURATION
         // ========================================
         const slides = [
             {
                 navTitle: "HOME",
                 heading: "YOUR NAME",
                 description: "Welcome to my official portfolio.",
-                media: "https://assets.codepen.io/7558/orange-portrait-001.jpg" // 배경 이미지 URL
+                media: "https://assets.codepen.io/7558/orange-portrait-001.jpg" // Home은 기본 이미지
             },
             {
                 navTitle: "PROFILE",
                 heading: "PROFILE",
                 description: "I am a visual artist and musician based in Seoul.\nExploring the boundaries between sight and sound.",
-                media: "https://assets.codepen.io/7558/orange-portrait-002.jpg"
+                media: "./images/프로필 1.JPG" // [사용자 요청] 로컬 이미지 적용
             },
             {
                 navTitle: "MUSIC",
@@ -296,7 +292,7 @@
                 this.ctx = null;
                 this.animationId = null;
                 this.startTime = null;
-                this.duration = 2000; // 로딩 시간
+                this.duration = 2000;
                 this.createLoadingScreen();
             }
             createLoadingScreen() {
@@ -341,7 +337,6 @@
                         this.overlay?.remove();
                         const sliderWrapper = document.querySelector(".slider-wrapper");
                         if (sliderWrapper) sliderWrapper.classList.add("loaded");
-                        // Trigger initial content animation
                         setTimeout(() => document.getElementById("contentOverlay").classList.add("content-active"), 500);
                     }, 800);
                 }
@@ -350,32 +345,19 @@
         document.addEventListener("DOMContentLoaded", () => new SliderLoadingManager());
 
         // ========================================
-        // VISUAL EFFECTS CONFIG
+        // CONFIG
         // ========================================
         const SLIDER_CONFIG = {
             settings: {
                 transitionDuration: 2.5,
                 autoSlideSpeed: 6000,
                 currentEffect: "glass",
-                currentEffectPreset: "Default",
-                globalIntensity: 1.0,
-                speedMultiplier: 1.0,
-                distortionStrength: 1.0,
-                colorEnhancement: 1.0,
-                // Defaults
-                glassRefractionStrength: 1.0, glassChromaticAberration: 1.0, glassBubbleClarity: 1.0, glassEdgeGlow: 1.0, glassLiquidFlow: 1.0,
-                frostIntensity: 1.5, frostCrystalSize: 1.0, frostIceCoverage: 1.0, frostTemperature: 1.0, frostTexture: 1.0,
-                rippleFrequency: 25.0, rippleAmplitude: 0.08, rippleWaveSpeed: 1.0, rippleRippleCount: 1.0, rippleDecay: 1.0,
-                plasmaIntensity: 1.2, plasmaSpeed: 0.8, plasmaEnergyIntensity: 0.4, plasmaContrastBoost: 0.3, plasmaTurbulence: 1.0,
-                timeshiftDistortion: 1.6, timeshiftBlur: 1.5, timeshiftFlow: 1.4, timeshiftChromatic: 1.5, timeshiftTurbulence: 1.4
-            },
-            effectPresets: {
-                glass: { Default: { glassRefractionStrength: 1.0, glassChromaticAberration: 1.0 } }
+                distortionStrength: 1.0
             }
         };
 
         // ========================================
-        // MAIN SLIDER CODE
+        // MAIN LOGIC
         // ========================================
         let currentSlideIndex = 0;
         let isTransitioning = false;
@@ -391,7 +373,6 @@
         const PROGRESS_UPDATE_INTERVAL = 50;
         const TRANSITION_DURATION = () => SLIDER_CONFIG.settings.transitionDuration;
 
-        // Touch variables
         let touchStartX = 0;
         let touchEndX = 0;
 
@@ -403,7 +384,6 @@
             }
         `;
 
-        // Simplified Shader for brevity (Supports Glass Effect)
         const fragmentShader = `
             uniform sampler2D uTexture1;
             uniform sampler2D uTexture2;
@@ -411,7 +391,6 @@
             uniform vec2 uResolution;
             uniform vec2 uTexture1Size;
             uniform vec2 uTexture2Size;
-            uniform int uEffectType;
             uniform float uDistortionStrength;
             
             varying vec2 vUv;
@@ -430,7 +409,7 @@
                 
                 float progress = uProgress;
                 
-                // Simple distortion effect
+                // Simple glass/liquid distortion
                 vec2 distortion = vec2(
                     sin(vUv.y * 10.0 + progress * 5.0) * 0.05,
                     cos(vUv.x * 10.0 + progress * 5.0) * 0.05
@@ -439,7 +418,6 @@
                 vec4 tex1 = texture2D(uTexture1, uv1 + distortion);
                 vec4 tex2 = texture2D(uTexture2, uv2 + distortion);
                 
-                // Mix based on progress
                 gl_FragColor = mix(tex1, tex2, progress);
             }
         `;
@@ -448,6 +426,7 @@
             pane = new Pane({ title: "Visual Controls" });
             pane.addBinding(SLIDER_CONFIG.settings, "distortionStrength", { min: 0, max: 3, label: "Distortion" });
             pane.addBinding(SLIDER_CONFIG.settings, "autoSlideSpeed", { min: 2000, max: 10000, label: "Speed" });
+            // Hide pane by default
             const paneEl = document.querySelector(".tp-dfwv");
             if(paneEl) paneEl.style.display = "none";
         };
@@ -509,25 +488,20 @@
             document.getElementById("slideTotal").textContent = String(slides.length).padStart(2, "0");
         };
 
-        // --- NEW: Update Content Overlay ---
         const updateContentOverlay = (index) => {
             const overlay = document.getElementById("contentOverlay");
             const heading = document.getElementById("mainHeading");
             const desc = document.getElementById("mainDesc");
 
-            // Fade Out
             overlay.classList.remove("content-active");
 
-            // Change Text after fade out starts
             setTimeout(() => {
                 heading.innerText = slides[index].heading;
                 desc.innerText = slides[index].description;
-                // Fade In
                 overlay.classList.add("content-active");
-            }, 800); // Sync with CSS transition
+            }, 800); 
         };
 
-        // Timer
         const startAutoSlideTimer = () => {
             if (!texturesLoaded || !sliderEnabled || slideTextures.length < 2) return;
             stopAutoSlideTimer();
@@ -581,7 +555,7 @@
             currentSlideIndex = targetIndex;
             updateCounter(currentSlideIndex);
             updateNavigationState(currentSlideIndex);
-            updateContentOverlay(currentSlideIndex); // Update Text
+            updateContentOverlay(currentSlideIndex);
 
             gsap.fromTo(shaderMaterial.uniforms.uProgress, 
                 { value: 0 },
@@ -612,6 +586,9 @@
                     texture.minFilter = THREE.LinearFilter;
                     texture.userData = { size: new THREE.Vector2(texture.image.width, texture.image.height) };
                     resolve(texture);
+                }, undefined, (err) => {
+                    console.error("Texture Load Error:", src, err);
+                    reject(err);
                 });
             });
         };
@@ -632,7 +609,6 @@
                     uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
                     uTexture1Size: { value: new THREE.Vector2(1, 1) },
                     uTexture2Size: { value: new THREE.Vector2(1, 1) },
-                    uEffectType: { value: 0 },
                     uDistortionStrength: { value: SLIDER_CONFIG.settings.distortionStrength }
                 },
                 vertexShader,
@@ -645,7 +621,9 @@
                 try {
                     const texture = await loadImageTexture(slides[i].media);
                     slideTextures.push(texture);
-                } catch (error) { console.warn(`Failed to load image ${i}`); }
+                } catch (error) { 
+                    console.warn(`Failed to load image ${i}: ${slides[i].media}`); 
+                }
             }
 
             if (slideTextures.length >= 2) {
